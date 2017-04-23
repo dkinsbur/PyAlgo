@@ -1,5 +1,6 @@
 __author__ = 'dkinsbur'
 
+
 class Feed(object):
 
     def __init__(self):
@@ -30,23 +31,68 @@ class Feed(object):
     def abort(self):
         self.abrt = True
 
-from Bar import Bar
+from Bar import CsvBar, MergedBar
+
 class CsvBarFeed(Feed):
-    def __init__(self, path):
+    def __init__(self, path, first_line='date,high,low,open,close,volume', date_format='%Y-%m-%d-%H-%M'):
         super(CsvBarFeed, self).__init__()
         self.path = path
-
-    def go(self):
-        with open(self.path) as self.csv:
-            first_line = self.csv.readline()  # skip title line
-            assert first_line.strip() == 'date,high,low,open,close,volume', [first_line]
-            super(CsvBarFeed, self).go()
+        self.date_format = date_format
+        self.first_line = first_line
 
     def _get_data_iterator(self):
-        for i, line in enumerate(self.csv):
-            time, high, low, Open, close, volume = line.strip().split(',')
-            b = Bar(time, high, low, Open, close, volume)
-            yield b
+        with open(self.path) as self.csv:
+            first_line = self.csv.readline()  # skip title line
+            assert first_line.strip() == self.first_line, '{} <> {}'.format([first_line.strip()], [self.first_line])
+            for line in self.csv:
+                b = CsvBar(line, self.date_format)
+                yield b
+
+class MergeBarFeed(Feed):
+
+    _merge_options = [
+        5 # five minutes
+    ]
+
+    def __init__(self, base_feed, merge):
+        if merge not in self._merge_options:
+            raise ValueError()
+
+        super(MergeBarFeed, self).__init__()
+        self._base_feed = base_feed
+        self._merge_amount = merge
+
+    def _get_data_iterator(self):
+        lst = []
+        for bar in self._base_feed._get_data_iterator():
+            import datetime
+            if bar.get_time() > datetime.datetime(2017,4,21,19,0):
+                print lst
+                print bar
+
+            if len(lst) == 0:
+                lst.append(bar)
+
+            #  1) check if time delta between prev bar and curr bar is less than merge amount
+            #  2) check that both prev minutes and curr bar minute are in the same merge amount slot
+            else:
+
+                delta_minutes = (bar.get_time() - lst[-1].get_time()).total_seconds()/60
+                less_than_merge = delta_minutes < self._merge_amount
+                cur_slot = (bar.get_time().minute / self._merge_amount)
+                prv_slot = (lst[-1].get_time().minute / self._merge_amount)
+                if less_than_merge and (cur_slot == prv_slot):
+                    lst.append(bar)
+
+                else:
+                    m = MergedBar(lst, round_mod=self._merge_amount)
+                    if bar.get_time() > datetime.datetime(2017,4,21,19,0):
+                        print '>>>>>', m
+                    yield m
+                    lst = [bar]
+
+        if len(lst) > 0:
+            yield MergedBar(lst, round_mod=self._merge_amount)
 
 
 import unittest

@@ -65,10 +65,6 @@ class MergeBarFeed(Feed):
     def _get_data_iterator(self):
         lst = []
         for bar in self._base_feed._get_data_iterator():
-            import datetime
-            if bar.get_time() > datetime.datetime(2017,4,21,19,0):
-                print lst
-                print bar
 
             if len(lst) == 0:
                 lst.append(bar)
@@ -86,8 +82,6 @@ class MergeBarFeed(Feed):
 
                 else:
                     m = MergedBar(lst, round_mod=self._merge_amount)
-                    if bar.get_time() > datetime.datetime(2017,4,21,19,0):
-                        print '>>>>>', m
                     yield m
                     lst = [bar]
 

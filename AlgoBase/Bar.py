@@ -1,5 +1,7 @@
 __author__ = 'dkinsbur'
 
+from datetime import timedelta, datetime
+
 class Bar(object):
 
     def __init__(self, time, high, low, open, close, volume):
@@ -35,6 +37,44 @@ class Bar(object):
             s += '{}={} | '.format(attr, getattr(self, 'get_'+attr)())
 
         return s
+
+
+class CsvBar(Bar):
+    def __init__(self, csv_line, time_format):
+        time, high, low, Open, close, volume = csv_line.strip().split(',')
+        time = datetime.strptime(time, time_format)
+        high = float(high)
+        low = float(low)
+        Open = float(Open)
+        close = float(close)
+        volume = int(volume)
+        super(CsvBar, self).__init__(time, high, low, Open, close, volume)
+
+
+class MergedBar(Bar):
+
+    def __init__(self, bars, round_mod=1):
+        self._time = None
+        for bar in bars:
+            if not self._time:
+                self._time = bar.get_time()
+                self._high = bar.get_high()
+                self._low = bar.get_low()
+                self._open = bar.get_open()
+                self._close = bar.get_close()
+                self._volume = bar.get_volume()
+            else:
+                assert self._time < bar.get_time(), '{} - {}'.format(self._time, bar.get_time())  # make sure we start from first to last
+                self._high = max(self._high, bar.get_high())
+                self._low = min(self._low, bar.get_low())
+                self._close = bar.get_close()
+                self._volume += bar.get_volume()
+
+        if round_mod > 1:
+
+            self._time -= timedelta(minutes=self._time.minute % round_mod)
+
+
 
 
 import unittest

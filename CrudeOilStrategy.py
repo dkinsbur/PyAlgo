@@ -1,11 +1,11 @@
 __author__ = 'dkinsbur'
 
 from datetime import datetime, timedelta
-from AlgoRepo.AlgoBase.Feed import *
-
+from AlgoBase.Feed import *
+from AlgoBase.Broker import Broker
 def load_oil_reports(path):
 
-    reports = []
+    oil_reports = []
 
     with open(path) as f:
         f.readline()  # read first line
@@ -18,28 +18,9 @@ def load_oil_reports(path):
             actual_more_than_forcast = actual > forcast
             assert (actual_more_than_forcast and color == 'redFont') or (
             (not actual_more_than_forcast) and color == 'greenFont')
-            reports.append({'DATE':date, 'ACTUAL':actual, 'FORCAST':forcast, 'TRIGGER': 'UWT' if color == 'greenFont' else 'DWT'})
+            oil_reports.append({'DATE':date, 'ACTUAL':actual, 'FORCAST':forcast, 'TRIGGER': 'UWT' if color == 'greenFont' else 'DWT'})
 
-    return reports
-
-class Broker(object):
-
-    def __init__(self, balance, slipage):
-        self.slipage = slipage
-        self.balance = balance
-
-    def buy(self, symbol, amount, price, time=None):
-        tm_str = '' if not time else '[{}]'.format(time)
-        print '{}BUY {} {} {}'.format(tm_str, symbol, amount, price + self.slipage)
-        self.balance -= amount * price
-
-    def sell(self, symbol, amount, price, time=None):
-        tm_str = '' if not time else '[{}]'.format(time)
-        print '{}SELL {} {} {}'.format(tm_str, symbol, amount, price - self.slipage)
-        self.balance += amount * price
-
-    def get_ballance(self):
-        return self.balance
+    return oil_reports
 
 
 
@@ -169,7 +150,7 @@ if __name__ == '__main__':
     dwt_feed = FiveMinBarFeed(DWT_MIN_PATH)
 
 
-    strategy = CrudeOilStrategy(reports, DuplicateBarFeed(uwt_feed, dwt_feed), Broker(10000, 0.05), 200, False)
+    strategy = CrudeOilStrategy(reports, DuplicateBarFeed(uwt_feed, dwt_feed), Broker(10000, 0.05), 500, False)
     strategy.go()
 
 

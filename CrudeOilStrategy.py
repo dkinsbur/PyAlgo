@@ -48,6 +48,8 @@ class CrudeOilStrategy(object):
 
         self.prev_bal = broker.get_ballance()
 
+        self.no_trigger = 0
+
 
     def on_5min_bar(self, feed, bars):
 
@@ -92,6 +94,7 @@ class CrudeOilStrategy(object):
                 self.state = ST_NONE
 
                 print '!!! Day ended with NO trigger !!!'
+                self.no_trigger += 1
 
             if bar.get_high() >= self.trigger_price:
                 self.broker.buy(self.curr_report['TRIGGER'], self.stocks, self.trigger_price,time=bar.get_time())
@@ -144,14 +147,74 @@ if __name__ == '__main__':
     CSV_FRST_LINE = 'date,hi,lo,open,close,volume'
     CSV_DATE_FORMAT = '%Y/%m/%d %H:%M'
 
-    reports = load_oil_reports(CRUDE_OI_REPORT_PATH)
-    reports.sort(key=lambda x:x['DATE'])
-    uwt_feed = FiveMinBarFeed(UWT_MIN_PATH)
-    dwt_feed = FiveMinBarFeed(DWT_MIN_PATH)
+
+    stocks = 500
+    for advance_stop in [True, False]:
+        reports = load_oil_reports(CRUDE_OI_REPORT_PATH)
+        reports.sort(key=lambda x:x['DATE'])
+        uwt_feed = FiveMinBarFeed(UWT_MIN_PATH)
+        dwt_feed = FiveMinBarFeed(DWT_MIN_PATH)
+        strategy = CrudeOilStrategy(reports, DuplicateBarFeed(uwt_feed, dwt_feed), Broker(10000, 0.20), stocks, advance_stop)
+        strategy.go()
+
+        loss_count = 0
+        profit_count = 0
+        adj_loss_count = 0
+        adj_profit_count = 0
+        max_loss = 0
+        max_profit = 0
+        sum_loss = 0
+        sum_profit = 0
+
+        curr_adj_loss = 0
+        curr_adj_prof = 0
+
+        for pos in strategy.broker.get_closed_positions():
+            if pos[1] > 0:
+                profit_count += 1
+                max_profit = max(pos[1], max_profit)
+                sum_profit += pos[1]
+
+                curr_adj_prof += 1
+                curr_adj_loss = 0
+                adj_profit_count = max(adj_profit_count, curr_adj_prof)
+
+            else:
+                loss_count += 1
+                max_loss = min(pos[1], max_loss)
+                sum_loss += pos[1]
+
+                curr_adj_loss += 1
+                curr_adj_prof = 0
+                adj_loss_count = max(adj_loss_count, curr_adj_loss)
+        from tabulate import tabulate
+
+        avg_profit = 0 if profit_count == 0 else round(sum_profit/profit_count, 2)
+        avg_loss = 0 if loss_count == 0 else round(sum_loss/loss_count, 2)
+
+        table = [['Total Days', strategy.no_trigger + profit_count+ loss_count],
+                 ['Days with no trigger', strategy.no_trigger],
+                 ['profit/loss ratio', round(avg_profit/avg_loss,2)],
+                 ['stocks traded', stocks],
+                 ['advance stop', advance_stop],
+                 ['total profit', sum_profit+sum_loss],
+                 ]
+        print tabulate(table, tablefmt='grid')
+
+        header = ['', 'profit', 'loss']
+        table = [
+            ['max', max_profit, max_loss],
+            ['avg', avg_profit, avg_loss],
+            ['%', 100*round(profit_count/float(profit_count+loss_count+strategy.no_trigger),2), 100*round(loss_count/float(profit_count+loss_count+strategy.no_trigger), 2)],
+            ['sum', sum_profit, sum_loss],
+            ['count', profit_count, loss_count],
+            ['adj', adj_profit_count, adj_loss_count],
+        ]
+        print tabulate(table, header, tablefmt='grid')
 
 
-    strategy = CrudeOilStrategy(reports, DuplicateBarFeed(uwt_feed, dwt_feed), Broker(10000, 0.05), 500, False)
-    strategy.go()
+
+
 
 
 

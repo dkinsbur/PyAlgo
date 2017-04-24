@@ -88,6 +88,55 @@ class MergeBarFeed(Feed):
         if len(lst) > 0:
             yield MergedBar(lst, round_mod=self._merge_amount)
 
+class DuplicateBarFeed(Feed):
+
+    def __init__(self, feed1, feed2):
+        super(DuplicateBarFeed, self).__init__()
+        assert type(feed1) == type(feed2)
+        self.feed1 = feed1
+        self.feed2 = feed2
+
+    def _get_data_iterator(self):
+        iter1 = self.feed1._get_data_iterator()
+        iter2 = self.feed2._get_data_iterator()
+        fetch1 = True
+        fetch2 = True
+
+        bar1 = 1  # dummy value for the first iteration
+        bar2 = 1  # dummy value for the first iteration
+
+        while bar1 or bar2:
+            if fetch1:
+                try:
+                    fetch1 = False
+                    bar1 = iter1.next()
+                except StopIteration:
+                    bar1 = None
+
+            if fetch2:
+                try:
+                    fetch2 = False
+                    bar2 = iter2.next()
+                except StopIteration:
+                    bar2 = None
+
+            if bar1 and bar2:
+                if bar1.get_time() == bar2.get_time():
+                    fetch1 = True
+                    fetch2 = True
+                    yield bar1, bar2
+
+                elif bar1.get_time() > bar2.get_time():
+                    fetch2 = True
+                    yield None, bar2
+
+                else:
+                    fetch1 = True
+                    yield bar1, None
+
+            elif bar1 or bar2:
+                yield bar1, bar2
+
 
 import unittest
 class UltFeed(unittest.TestCase):

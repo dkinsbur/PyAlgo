@@ -28,7 +28,8 @@ class Broker(object):
 
             #  check if we closed short position
             if new_amount == 0:
-                self.closed_positions.append((symbol, prev_balance - price*amount))
+                self.closed_positions.append((symbol, round(prev_balance - price*amount), 4))
+                print ((symbol, round(prev_balance - price*amount), 4))
                 self.positions.pop(symbol)
 
             #  we were in a short position and stayed in a short position
@@ -40,7 +41,8 @@ class Broker(object):
                 # check if we were in a short position closed it and started a long position
                 if prev_amount < 0:
                     amount_to_close_pos = -prev_amount
-                    self.closed_positions.append((symbol, prev_balance-price*amount_to_close_pos))
+                    self.closed_positions.append((symbol, round(prev_balance-price*amount_to_close_pos, 4)))
+                    print ((symbol, round(prev_balance-price*amount_to_close_pos, 4)))
                     self.positions[symbol] = (new_amount, -price*new_amount)
 
                 # we added shares to our long position
@@ -71,7 +73,8 @@ class Broker(object):
 
             #  check if we closed long position
             if new_amount == 0:
-                self.closed_positions.append((symbol, prev_balance - price*amount))
+                self.closed_positions.append((symbol, round(prev_balance - price*amount, 4)))
+                print ((symbol, round(prev_balance - price*amount, 4)))
                 self.positions.pop(symbol)
 
             #  we were in a long position and stayed in a long position
@@ -83,7 +86,8 @@ class Broker(object):
                 # check if we were in a long position closed it and started a short position
                 if prev_amount > 0:
                     amount_to_close_pos = -prev_amount
-                    self.closed_positions.append((symbol, prev_balance-price*amount_to_close_pos))
+                    self.closed_positions.append((symbol, round(prev_balance-price*amount_to_close_pos,4)))
+                    print ((symbol, round(prev_balance-price*amount_to_close_pos,4)))
                     self.positions[symbol] = (new_amount, -price*new_amount)
 
                 # we added shares to our short position

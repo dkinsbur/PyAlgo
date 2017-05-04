@@ -37,6 +37,17 @@ class Bar(object):
             s += '{}={} | '.format(attr, getattr(self, 'get_'+attr)())
 
         return s
+    
+    def __eq__(self, other):
+        if (self.get_time() == other.get_time() and
+            self.get_high() == other.get_high() and
+            self.get_low() == other.get_low() and
+            self.get_open()  == other.get_open() and
+            self.get_close() == other.get_close() and
+            self.get_volume() == other.get_volume()):
+            return True
+        else:
+            return False
 
 
 class CsvBar(Bar):

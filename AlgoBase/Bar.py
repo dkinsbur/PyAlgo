@@ -31,13 +31,8 @@ class Bar(object):
         return self._volume
 
     def __str__(self):
-        s = ''
+        return '[BAR]' + '|'.join('{}={}'.format(attr, getattr(self, 'get_'+attr)()) for attr in ['time', 'high', 'low', 'open', 'close', 'volume'])
 
-        for attr in ['time', 'high', 'low', 'open', 'close', 'volume']:
-            s += '{}={} | '.format(attr, getattr(self, 'get_'+attr)())
-
-        return s
-    
     def __eq__(self, other):
         if (self.get_time() == other.get_time() and
             self.get_high() == other.get_high() and

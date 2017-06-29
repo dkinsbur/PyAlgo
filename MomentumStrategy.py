@@ -113,7 +113,7 @@ class NesiMomentumStrategy(object):
             self.change_state(ST_FIND_EXIT)
 
         elif self.state == ST_FIND_EXIT:
-            if
+            pass
 
 
         else:

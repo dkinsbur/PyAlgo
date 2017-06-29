@@ -2,11 +2,12 @@ __author__ = 'dkinsbur'
 
 class Broker(object):
 
-    def __init__(self, balance, commision=0, min_commision=0, slipage=0):
+    def __init__(self, balance, commision=0, min_commision=0, slipage=0, log=True):
         self.slipage = slipage
         self.balance = balance
         self.positions = {}
         self.closed_positions = []
+        self.log = log
 
     def buy(self, symbol, amount, price, time=None):
 
@@ -29,7 +30,8 @@ class Broker(object):
             #  check if we closed short position
             if new_amount == 0:
                 self.closed_positions.append((symbol, round(prev_balance - price*amount), 4))
-                print ((symbol, round(prev_balance - price*amount), 4))
+                if self.log:
+                    print ((symbol, round(prev_balance - price*amount), 4))
                 self.positions.pop(symbol)
 
             #  we were in a short position and stayed in a short position
@@ -42,7 +44,8 @@ class Broker(object):
                 if prev_amount < 0:
                     amount_to_close_pos = -prev_amount
                     self.closed_positions.append((symbol, round(prev_balance-price*amount_to_close_pos, 4)))
-                    print ((symbol, round(prev_balance-price*amount_to_close_pos, 4)))
+                    if self.log:
+                        print ((symbol, round(prev_balance-price*amount_to_close_pos, 4)))
                     self.positions[symbol] = (new_amount, -price*new_amount)
 
                 # we added shares to our long position
@@ -50,7 +53,8 @@ class Broker(object):
                     self.positions[symbol] = (new_amount, prev_balance-price*amount)
 
         tm_str = '' if not time else '[{}]'.format(time)
-        print '{}BUY {} {} {}'.format(tm_str, symbol, amount, price)
+        if self.log:
+            print '{}BUY {} {} {}'.format(tm_str, symbol, amount, price)
 
     def sell(self, symbol, amount, price, time=None):
 
@@ -74,7 +78,8 @@ class Broker(object):
             #  check if we closed long position
             if new_amount == 0:
                 self.closed_positions.append((symbol, round(prev_balance - price*amount, 4)))
-                print ((symbol, round(prev_balance - price*amount, 4)))
+                if self.log:
+                    print ((symbol, round(prev_balance - price*amount, 4)))
                 self.positions.pop(symbol)
 
             #  we were in a long position and stayed in a long position
@@ -87,7 +92,8 @@ class Broker(object):
                 if prev_amount > 0:
                     amount_to_close_pos = -prev_amount
                     self.closed_positions.append((symbol, round(prev_balance-price*amount_to_close_pos,4)))
-                    print ((symbol, round(prev_balance-price*amount_to_close_pos,4)))
+                    if self.log:
+                        print ((symbol, round(prev_balance-price*amount_to_close_pos,4)))
                     self.positions[symbol] = (new_amount, -price*new_amount)
 
                 # we added shares to our short position
@@ -95,7 +101,8 @@ class Broker(object):
                     self.positions[symbol] = (new_amount, prev_balance-price*amount)
 
         tm_str = '' if not time else '[{}]'.format(time)
-        print '{}SELL {} {} {}'.format(tm_str, symbol, amount, price)
+        if self.log:
+            print '{}SELL {} {} {}'.format(tm_str, symbol, amount, price)
 
     def get_ballance(self):
         return self.balance

@@ -207,14 +207,23 @@ if __name__ == '__main__':
     #
     # exit()
 
+########### ALDR #################
     config = {
         'YESTERDAY_BAR': Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700),
         'BEARISH_THRESHOLD_PERCENT' : -3,
         'CORRECTION_THRESHOLD': 0.05,
         'ROUND_DELTA': 0.05
     }
-
-
     m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\ALDR_part.txt'), None, config)
-    #m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, config)
+#    m.go()
+
+
+#############
+    config = {
+        'YESTERDAY_BAR': Bar(datetime(2017, 6, 28, 16, 0),89.54,89.27, 89.39, 89.52, 49700),
+        'BEARISH_THRESHOLD_PERCENT' : -4,
+        'CORRECTION_THRESHOLD': 0.05,
+        'ROUND_DELTA': 0.15
+    }
+    m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, config)
     m.go()

@@ -2,17 +2,24 @@ from AlgoRepo.AlgoBase.Bar import Bar
 from AlgoRepo.AlgoBase.Feed import CsvBarFeed
 
 class MeirStrategy(object):
-    def __init__(self, feed, broker, yesterday_bar, bearish_threshold, correction_threshold, near_round_delta):
+    def __init__(self, feed, broker, config): # yesterday_bar, bearish_threshold, correction_threshold, near_round_delta):
+
         self.feed = feed
         self.feed.register(self.on_bar, None)
 
         self.broker = broker
+# config = {
+#         'YESTERDAY_BAR': Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700),
+#         'BEARISH_THRESHOLD_PERCENT' : -3,
+#         'CORRECTION_THRESHOLD': 0.05,
+#         'ROUND_DELTA': 0.05
+#     }
+        self.bearish_threshold = config['BEARISH_THRESHOLD_PERCENT']
+        self.yesterday_bar = config['YESTERDAY_BAR']
+        self.correction_threshold = config['CORRECTION_THRESHOLD']
+        self.near_round_delta = config['ROUND_DELTA']
 
-        self.bearish_threshold = bearish_threshold
         self.today_bar = None
-        self.yesterday_bar = yesterday_bar
-        self.correction_threshold = correction_threshold
-        self.near_round_delta = near_round_delta
 
         self._has_reached_round = False
 
@@ -187,21 +194,27 @@ if __name__ == '__main__':
     #         print '{} -- {}: {} [{}]'.format(c, *p)
 
 
-    f = CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt')
-    high_trend = TrendFeed(0.2, f, 'get_high')
-    low_trend = TrendFeed(0.2, f, 'get_low')
-    f.go()
-    pivots = [('U', p) for p in high_trend.pivots] + [('D', p) for p in low_trend.pivots]
-    pivots.sort(key= lambda x: x[1][2])
-    for c, p in pivots:
-        if (c == 'U' and p[0] == 'H') or \
-                (c == 'D' and p[0] == 'L'):
-            print '{} -- {}: {} [{}]'.format(c, *p)
+    # f = CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt')
+    # high_trend = TrendFeed(0.2, f, 'get_high')
+    # low_trend = TrendFeed(0.2, f, 'get_low')
+    # f.go()
+    # pivots = [('U', p) for p in high_trend.pivots] + [('D', p) for p in low_trend.pivots]
+    # pivots.sort(key= lambda x: x[1][2])
+    # for c, p in pivots:
+    #     if (c == 'U' and p[0] == 'H') or \
+    #             (c == 'D' and p[0] == 'L'):
+    #         print '{} -- {}: {} [{}]'.format(c, *p)
+    #
+    # exit()
 
-    exit()
+    config = {
+        'YESTERDAY_BAR': Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700),
+        'BEARISH_THRESHOLD_PERCENT' : -3,
+        'CORRECTION_THRESHOLD': 0.05,
+        'ROUND_DELTA': 0.05
+    }
 
-    yesterday_bar = Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700)
-    bearish_threshold = -3
-    correction_threshold = 0.05
-    m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, yesterday_bar, bearish_threshold, correction_threshold, 0.05)
+
+    m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\ALDR_part.txt'), None, config)
+    #m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, config)
     m.go()

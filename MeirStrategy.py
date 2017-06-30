@@ -36,6 +36,13 @@ class MeirStrategy(object):
 
         if self.trigger_check():
             print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+            pl = ph = None
+            try:
+                pl = self.lows_trend.get_pivots()[-1]
+                ph = self.highs_trend.get_pivots()[-1]
+            except:
+                pass
+            print '----------------------', pl, ph
             self.triggers.append(bar)
 
             self.add_filtered_trigger(bar)
@@ -73,6 +80,7 @@ class MeirStrategy(object):
     # stock is correcting up
     # stock reached round/half price
     # stock moving back down
+
     def trigger_check(self):
         is_bearish = self.trigger_is_bearish_today()
         correcting = self.trigger_is_correcting_up()
@@ -104,7 +112,6 @@ class MeirStrategy(object):
         piv_below = self.next_pivot_below(high)
 
         return self.in_pivot_range(piv_above, high) or self.in_pivot_range(piv_below, high)
-
 
     def trigger_is_correcting_up(self):
 
@@ -223,7 +230,7 @@ if __name__ == '__main__':
     from datetime import datetime
 
 
-    # ConvertFreestockCsvToMyCsv(r'C:\Users\dkinsbur\Desktop\iphi_free_5.txt', r'.\Data\iphi_csv_5.txt' )
+    # ConvertFreestockCsvToMyCsv(r'C:\Users\dkinsbur\Desktop\gov_free_1.txt', r'.\Data\gov_csv_1.txt' )
     # exit()
 
     # def on_bar(feed, bar):
@@ -260,27 +267,36 @@ if __name__ == '__main__':
 ########### ALDR #################
     # config = {
     #     'YESTERDAY_BAR': Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700),
-    #     'BEARISH_THRESHOLD_PERCENT' : -3,
-    #     'CORRECTION_THRESHOLD': 0.05,
-    #     'ROUND_DELTA': 0.05,
-    #     'TREND_THRESHOLD': 0.5,
+    #     'BEARISH_THRESHOLD_PERCENT' : -4,
+    #     'CORRECTION_THRESHOLD': 0.15,
+    #     'ROUND_DELTA': 0.03,
+    #     'TREND_THRESHOLD': 0.05,
     # }
     # m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\ALDR_part.txt'), None, config)
-#    m.go()
+    # m.go()
 
 
 #############
-    config = {
-        'YESTERDAY_BAR': Bar(datetime(2017, 6, 28, 16, 0),89.54,89.27, 89.39, 89.52, 49700),
-        'BEARISH_THRESHOLD_PERCENT' : -4,
-        'CORRECTION_THRESHOLD': 0.05,
-        'ROUND_DELTA': 0.05,
-        'TREND_THRESHOLD': 0.15,
-    }
-    # m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Documents\Work\pythonProjects\AlgoTrade\AlgoRepo\Data\iphi_csv_5.txt'), None, config)
-    m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, config)
-    m.go()
+    # config = {
+    #     'YESTERDAY_BAR': Bar(datetime(2017, 6, 28, 16, 0),89.54,89.27, 89.39, 89.52, 49700),
+    #     'BEARISH_THRESHOLD_PERCENT' : -4,
+    #     'CORRECTION_THRESHOLD': 0.3,
+    #     'ROUND_DELTA': 0.05,
+    #     'TREND_THRESHOLD': 0.1,
+    # }
+    # m = MeirStrategy(CsvBarFeed(r'.\Data\gov_csv_1.txt'), None, config)
+    # m.go()
 
+  # config = {
+  #       'YESTERDAY_BAR': Bar(datetime(2017, 6, 28, 16, 0),89.54,89.27, 89.39, 89.52, 49700),
+  #       'BEARISH_THRESHOLD_PERCENT' : -4,
+  #       'CORRECTION_THRESHOLD': 0.3,
+  #       'ROUND_DELTA': 0.05,
+  #       'TREND_THRESHOLD': 0.1,
+  #   }
+  #   m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, config)
+  #   m.go()
+  #
     print '-' * 50
 
     for t in m.triggers:

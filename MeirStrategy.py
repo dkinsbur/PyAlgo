@@ -5,16 +5,13 @@ from AlgoRepo.AlgoBase.Feed import CsvBarFeed
 class MeirStrategy(object):
     def __init__(self, feed, broker, config): # yesterday_bar, bearish_threshold, correction_threshold, near_round_delta):
 
+        self.filtered_triggers = []
+        self.triggers = []
         self.feed = feed
         self.feed.register(self.on_bar, None)
 
         self.broker = broker
-# config = {
-#         'YESTERDAY_BAR': Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700),
-#         'BEARISH_THRESHOLD_PERCENT' : -3,
-#         'CORRECTION_THRESHOLD': 0.05,
-#         'ROUND_DELTA': 0.05
-#     }
+
         self.bearish_threshold = config['BEARISH_THRESHOLD_PERCENT']
         self.yesterday_bar = config['YESTERDAY_BAR']
         self.correction_threshold = config['CORRECTION_THRESHOLD']
@@ -35,12 +32,37 @@ class MeirStrategy(object):
 
         self.curr_bar = bar
 
-        self.update_has_reached()
+        # self.update_has_reached()
 
         if self.trigger_check():
             print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+            self.triggers.append(bar)
 
+            self.add_filtered_trigger(bar)
 
+    def add_filtered_trigger(self, bar):
+        ####### filtered_triggers - list with only new pivots #######
+        new_pivot = False
+        last_trigger = None
+        last_pivot = None
+        try:
+            last_trigger = self.filtered_triggers[-1]
+            last_pivot = self.lows_trend.get_pivots()[-1]
+        except IndexError:
+            pass
+
+        # if there was no trigger before this is definitely a new one
+        if last_trigger is None:
+            new_pivot = True
+
+        elif last_pivot is not None:
+            if last_pivot.type == PIVOT_LOW and last_pivot.time > last_trigger.get_time():
+                new_pivot = True
+        else:
+            assert False  # illegal case
+        if new_pivot:
+            self.filtered_triggers.append(bar)
+            #################################################################
 
     def go(self):
         self.feed.go()
@@ -76,7 +98,13 @@ class MeirStrategy(object):
         return is_bearish_bar
 
     def trigger_has_reached_round(self):
-        return self._has_reached_round
+        bar = self.get_curr_bar()
+        high = bar.get_high()
+        piv_above = self.next_pivot_above(high)
+        piv_below = self.next_pivot_below(high)
+
+        return self.in_pivot_range(piv_above, high) or self.in_pivot_range(piv_below, high)
+
 
     def trigger_is_correcting_up(self):
 
@@ -87,10 +115,10 @@ class MeirStrategy(object):
             pivots = self.lows_trend.get_pivots()
             local_low = None
             try:
-                if pivots[-1][0] == 'L':
-                    local_low = pivots[-1][1]
-                elif pivots[-2][0] == 'L':
-                    local_low = pivots[-2][1]
+                if pivots[-1].type == PIVOT_LOW:
+                    local_low = pivots[-1].price
+                elif pivots[-2].type == PIVOT_LOW:
+                    local_low = pivots[-2].price
             except IndexError:
                 return False
 
@@ -116,19 +144,32 @@ class MeirStrategy(object):
 
         return round_price + 1
 
+    def next_pivot_below(self, price):
+        # get round number above price
+        round_price = int(price)
+        if round_price < price:
+            round_price += 1
+
+        half = round_price - 0.5
+
+        if price >= half:
+            return half
+
+        return round_price - 1
+
     def in_pivot_range(self, pivot, price):
         return abs(pivot - price) <= self.near_round_delta
 
-    def update_has_reached(self):
-        bar = self.get_curr_bar()
-        open_next_pivot = self.next_pivot_above(bar.get_open())
-        in_range = self.in_pivot_range(open_next_pivot, bar.get_high())
-        if not in_range:
-            high_next_pivot = self.next_pivot_above(bar.get_high())
-            if high_next_pivot != open_next_pivot:
-                in_range = self.in_pivot_range(high_next_pivot, bar.get_high())
-
-        self._has_reached_round = in_range
+    # def update_has_reached(self):
+    #     bar = self.get_curr_bar()
+    #     low_next_pivot = self.next_pivot_above(bar.get_low())
+    #     in_range = self.in_pivot_range(low_next_pivot, bar.get_high())
+    #     if not in_range:
+    #         high_next_pivot = self.next_pivot_above(bar.get_high())
+    #         if high_next_pivot != low_next_pivot:
+    #             in_range = self.in_pivot_range(high_next_pivot, bar.get_high())
+    #
+    #     self._has_reached_round = in_range
 
     def get_yesterday_close(self):
         return self.get_yesterday_bar().get_close()
@@ -181,23 +222,9 @@ if __name__ == '__main__':
 
     from datetime import datetime
 
-    # time = datetime.strptime('6/26/2017 2:11:00 PM', '%m/%d/%Y %H:%M:00 %p')
-    # print time
-    # time = datetime.strptime('6/27/2017 9:40:00 AM', '%m/%d/%Y %H:%M:00 %p')
-    # print time
-    # print FreestockTimeToMyCsvTime('6/26/2017 2:11:00 PM')
-    # print FreestockTimeToMyCsvTime('6/27/2017 9:40:00 AM')
-    # print datetime.strptime(FreestockTimeToMyCsvTime('6/26/2017 2:11:00 PM'), '%Y-%m-%d-%H-%M')
-    # print datetime.strptime(FreestockTimeToMyCsvTime('6/27/2017 9:40:00 AM'), '%Y-%m-%d-%H-%M')
 
-    # fs_path = r'C:\Users\dkinsbur\Desktop\iphi_free.txt'
-    # out_path = r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'
-    # ConvertFreestockCsvToMyCsv(fs_path, out_path)
+    # ConvertFreestockCsvToMyCsv(r'C:\Users\dkinsbur\Desktop\iphi_free_5.txt', r'.\Data\iphi_csv_5.txt' )
     # exit()
-
-#2017-6-27-16-00,13.65,13.45,13.65,13.48,187700
-
-
 
     # def on_bar(feed, bar):
     #     feed.low_trend.add((bar.get_low(), bar.get_time()))
@@ -231,14 +258,14 @@ if __name__ == '__main__':
     # exit()
 
 ########### ALDR #################
-    config = {
-        'YESTERDAY_BAR': Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700),
-        'BEARISH_THRESHOLD_PERCENT' : -3,
-        'CORRECTION_THRESHOLD': 0.05,
-        'ROUND_DELTA': 0.05,
-        'TREND_THRESHOLD': 0.5,
-    }
-    m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\ALDR_part.txt'), None, config)
+    # config = {
+    #     'YESTERDAY_BAR': Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700),
+    #     'BEARISH_THRESHOLD_PERCENT' : -3,
+    #     'CORRECTION_THRESHOLD': 0.05,
+    #     'ROUND_DELTA': 0.05,
+    #     'TREND_THRESHOLD': 0.5,
+    # }
+    # m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\ALDR_part.txt'), None, config)
 #    m.go()
 
 
@@ -247,8 +274,19 @@ if __name__ == '__main__':
         'YESTERDAY_BAR': Bar(datetime(2017, 6, 28, 16, 0),89.54,89.27, 89.39, 89.52, 49700),
         'BEARISH_THRESHOLD_PERCENT' : -4,
         'CORRECTION_THRESHOLD': 0.05,
-        'ROUND_DELTA': 0.1,
+        'ROUND_DELTA': 0.05,
         'TREND_THRESHOLD': 0.15,
     }
+    # m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Documents\Work\pythonProjects\AlgoTrade\AlgoRepo\Data\iphi_csv_5.txt'), None, config)
     m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, config)
     m.go()
+
+    print '-' * 50
+
+    for t in m.triggers:
+        print t
+
+    print '-' * 50
+
+    for t in m.filtered_triggers:
+        print t

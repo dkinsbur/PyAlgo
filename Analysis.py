@@ -1,9 +1,12 @@
 from AlgoRepo.AlgoBase.Bar import Bar
-
+from collections import namedtuple
 __author__ = 'dkinsbur'
 
 TREND_DOWN = -1
 TREND_UP = 1
+PIVOT_LOW = 'L'
+PIVOT_HIGH = 'H'
+Pivot = namedtuple('Pivot', ('type','price', 'time'))
 
 class Trend(object):
     def __init__(self, threshold):
@@ -66,9 +69,7 @@ class Trend(object):
                     self.trend_flip = True
                     self.local_max = price
                     self.local_max_time = time
-                    pivot = ('L', self.local_min, self.local_min_time)
-                    self.pivots.append(pivot)
-                    self._pivot_found(pivot)
+                    self._new_pivot('L', self.local_min, self.local_min_time)
 
         elif price < self.price:
             if self.trend == TREND_DOWN:
@@ -81,11 +82,14 @@ class Trend(object):
                     self.trend_flip = True
                     self.local_min = price
                     self.local_min_time = time
-                    pivot = ('H', self.local_max, self.local_max_time)
-                    self.pivots.append(pivot)
-                    self._pivot_found(pivot)
+                    self._new_pivot('H', self.local_max, self.local_max_time)
 
         self.price = price
+
+    def _new_pivot(self, type, price, time):
+        p = Pivot(type, price, time)
+        self.pivots.append(p)
+        self._pivot_found(p)
 
     def get_trend(self):
         return self.trend

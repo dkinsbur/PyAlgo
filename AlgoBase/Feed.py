@@ -4,20 +4,27 @@ __author__ = 'dkinsbur'
 class Feed(object):
 
     def __init__(self):
+        self._evt_on_start = []
         self._evt_on_data = []
         self._evt_on_end = []
         self.abrt = False
 
-    def register(self, on_data, on_end):
+    def register(self, on_data, on_end=None, on_start=None):
         if on_data:
             self._evt_on_data.append(on_data)
         if on_end:
             self._evt_on_end.append(on_end)
 
+        if on_start:
+            self._evt_on_start.append(on_start)
+
     def _get_data_iterator(self):
         raise NotImplementedError
 
     def go(self):
+        for cb in self._evt_on_start:
+            cb(self)
+
         for data in self._get_data_iterator():
             for cb in self._evt_on_data:
                 cb(self, data)

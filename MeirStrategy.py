@@ -34,16 +34,15 @@ class MeirStrategy(object):
     # stock reached round/half price
     # stock moving back down
     def check_trigger(self):
-        is_bearish = self.is_bearish_today()
-        correcting = self.is_correcting_up()
-        reached_round = self.has_reached_round()
-        moving_down = self.is_moving_back_down()
+        is_bearish = self.trigger_is_bearish_today()
+        correcting = self.trigger_is_correcting_up()
+        reached_round = self.trigger_has_reached_round()
+        moving_down = self.trigger_is_moving_back_down()
+
         print '[{}] bearish: {} | correct: {} | round: {} | move down: {}'.format(self.get_curr_bar().get_time(), is_bearish, correcting, reached_round, moving_down)
         return is_bearish and correcting and reached_round and moving_down
 
-
-
-    def is_bearish_today(self):
+    def trigger_is_bearish_today(self):
         yesterday = self.get_yesterday_bar()
         yesterday_close = yesterday.get_close()
         bar = self.get_curr_bar()
@@ -53,7 +52,7 @@ class MeirStrategy(object):
 
         return change_percent < self.bearish_threshold
 
-    def is_moving_back_down(self):
+    def trigger_is_moving_back_down(self):
         bar = self.get_curr_bar()
         is_bearish_bar = (bar.get_close() - bar.get_open()) < 0
         return is_bearish_bar
@@ -81,8 +80,7 @@ class MeirStrategy(object):
 
         self._has_reached_round = in_range
 
-
-    def has_reached_round(self):
+    def trigger_has_reached_round(self):
         # bar = self.get_curr_bar()
         # high = bar.get_high()
         # frac = high - int(high) # get only fraction
@@ -93,7 +91,7 @@ class MeirStrategy(object):
 
         return self._has_reached_round
 
-    def is_correcting_up(self):
+    def trigger_is_correcting_up(self):
 
         bar = self.get_curr_bar()
         toady = self.get_today_bar()
@@ -161,15 +159,49 @@ if __name__ == '__main__':
     # print datetime.strptime(FreestockTimeToMyCsvTime('6/26/2017 2:11:00 PM'), '%Y-%m-%d-%H-%M')
     # print datetime.strptime(FreestockTimeToMyCsvTime('6/27/2017 9:40:00 AM'), '%Y-%m-%d-%H-%M')
 
-    # fs_path = r'C:\Users\dkinsbur\Desktop\ALDR_freestock.txt'
-    # out_path = r'C:\Users\dkinsbur\Desktop\ALDR_csv.txt'
+    # fs_path = r'C:\Users\dkinsbur\Desktop\iphi_free.txt'
+    # out_path = r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'
     # ConvertFreestockCsvToMyCsv(fs_path, out_path)
     # exit()
 
 #2017-6-27-16-00,13.65,13.45,13.65,13.48,187700
 
+
+    from Analysis import *
+
+    # def on_bar(feed, bar):
+    #     feed.low_trend.add((bar.get_low(), bar.get_time()))
+    #     feed.high_trend.add((bar.get_high(), bar.get_time()))
+    #
+    # f = CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt')
+    # f.high_trend = Trend(0.2)
+    # f.low_trend = Trend(0.2)
+    # f.register(on_bar)
+    # f.go()
+    #
+    # pivots = [('U', p) for p in f.high_trend.pivots] + [('D', p) for p in f.low_trend.pivots]
+    # pivots.sort(key= lambda x: x[1][2])
+    # for c, p in pivots:
+    #     if (c == 'U' and p[0] == 'H') or \
+    #             (c == 'D' and p[0] == 'L'):
+    #         print '{} -- {}: {} [{}]'.format(c, *p)
+
+
+    f = CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt')
+    high_trend = TrendFeed(0.2, f, 'get_high')
+    low_trend = TrendFeed(0.2, f, 'get_low')
+    f.go()
+    pivots = [('U', p) for p in high_trend.pivots] + [('D', p) for p in low_trend.pivots]
+    pivots.sort(key= lambda x: x[1][2])
+    for c, p in pivots:
+        if (c == 'U' and p[0] == 'H') or \
+                (c == 'D' and p[0] == 'L'):
+            print '{} -- {}: {} [{}]'.format(c, *p)
+
+    exit()
+
     yesterday_bar = Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700)
     bearish_threshold = -3
     correction_threshold = 0.05
-    m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\ALDR_part.txt'), None, yesterday_bar, bearish_threshold, correction_threshold, 0.05)
+    m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, yesterday_bar, bearish_threshold, correction_threshold, 0.05)
     m.go()

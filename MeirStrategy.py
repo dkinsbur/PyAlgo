@@ -1,3 +1,4 @@
+from Analysis import *
 from AlgoRepo.AlgoBase.Bar import Bar
 from AlgoRepo.AlgoBase.Feed import CsvBarFeed
 
@@ -21,14 +22,22 @@ class MeirStrategy(object):
 
         self.today_bar = None
 
+        self.highs_trend = TrendBar(config['TREND_THRESHOLD'], 'get_high')
+        self.lows_trend = TrendBar(config['TREND_THRESHOLD'], 'get_low')
+
         self._has_reached_round = False
 
     def on_bar(self, feed, bar):
+        self.highs_trend.add(bar)
+        self.lows_trend.add(bar)
+
         self.update_today_bar(bar)  # to simulate today's daily bar
+
         self.curr_bar = bar
+
         self.update_has_reached()
 
-        if self.check_trigger():
+        if self.trigger_check():
             print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
 
 
@@ -36,11 +45,13 @@ class MeirStrategy(object):
     def go(self):
         self.feed.go()
 
+######################## TRIGGER FUNCTIONS #############################
+
     # stock is moving down
     # stock is correcting up
     # stock reached round/half price
     # stock moving back down
-    def check_trigger(self):
+    def trigger_check(self):
         is_bearish = self.trigger_is_bearish_today()
         correcting = self.trigger_is_correcting_up()
         reached_round = self.trigger_has_reached_round()
@@ -64,6 +75,38 @@ class MeirStrategy(object):
         is_bearish_bar = (bar.get_close() - bar.get_open()) < 0
         return is_bearish_bar
 
+    def trigger_has_reached_round(self):
+        return self._has_reached_round
+
+    def trigger_is_correcting_up(self):
+
+        # first check if we are in a up trend or if we just flipped down on this bar
+        if self.highs_trend.get_trend() == TREND_UP or self.highs_trend.get_trend_flip():
+
+            # find the previous local min pivot. if it doesn't exist this is not a corrections
+            pivots = self.lows_trend.get_pivots()
+            local_low = None
+            try:
+                if pivots[-1][0] == 'L':
+                    local_low = pivots[-1][1]
+                elif pivots[-2][0] == 'L':
+                    local_low = pivots[-2][1]
+            except IndexError:
+                return False
+
+            # compare prev min pivot to current high and check if the delta is passes expected threshold
+            trend = self.highs_trend.get_trend()
+            high = self.get_curr_bar().get_high()
+
+            correction = high - local_low
+
+            return correction > self.correction_threshold
+        else:
+            #if not up trend then this is not a correction
+            return False
+
+###################################################################################
+
     def next_pivot_above(self, price):
         round_price = int(price)
         half = round_price + 0.5
@@ -86,25 +129,6 @@ class MeirStrategy(object):
                 in_range = self.in_pivot_range(high_next_pivot, bar.get_high())
 
         self._has_reached_round = in_range
-
-    def trigger_has_reached_round(self):
-        # bar = self.get_curr_bar()
-        # high = bar.get_high()
-        # frac = high - int(high) # get only fraction
-        # if 0.45 <= frac <= 0.55 or frac <= 0.05 or frac >= 0.95:
-        #     reached_round = True
-        # else:
-        #     reached_round = False
-
-        return self._has_reached_round
-
-    def trigger_is_correcting_up(self):
-
-        bar = self.get_curr_bar()
-        toady = self.get_today_bar()
-        correction = bar.get_close() - toady.get_low()
-        assert correction >= 0, str('{},{},{}'.format(bar.get_time(), bar.get_close(), toady.get_low()))
-        return correction > self.correction_threshold
 
     def get_yesterday_close(self):
         return self.get_yesterday_bar().get_close()
@@ -174,7 +198,6 @@ if __name__ == '__main__':
 #2017-6-27-16-00,13.65,13.45,13.65,13.48,187700
 
 
-    from Analysis import *
 
     # def on_bar(feed, bar):
     #     feed.low_trend.add((bar.get_low(), bar.get_time()))
@@ -195,8 +218,8 @@ if __name__ == '__main__':
 
 
     # f = CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt')
-    # high_trend = TrendFeed(0.2, f, 'get_high')
-    # low_trend = TrendFeed(0.2, f, 'get_low')
+    # high_trend = TrendBar(0.2, f, 'get_high')
+    # low_trend = TrendBar(0.2, f, 'get_low')
     # f.go()
     # pivots = [('U', p) for p in high_trend.pivots] + [('D', p) for p in low_trend.pivots]
     # pivots.sort(key= lambda x: x[1][2])
@@ -212,7 +235,8 @@ if __name__ == '__main__':
         'YESTERDAY_BAR': Bar(datetime(2017, 6, 27, 16, 0),13.65,13.45,13.65,13.48,187700),
         'BEARISH_THRESHOLD_PERCENT' : -3,
         'CORRECTION_THRESHOLD': 0.05,
-        'ROUND_DELTA': 0.05
+        'ROUND_DELTA': 0.05,
+        'TREND_THRESHOLD': 0.5,
     }
     m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\ALDR_part.txt'), None, config)
 #    m.go()
@@ -223,7 +247,8 @@ if __name__ == '__main__':
         'YESTERDAY_BAR': Bar(datetime(2017, 6, 28, 16, 0),89.54,89.27, 89.39, 89.52, 49700),
         'BEARISH_THRESHOLD_PERCENT' : -4,
         'CORRECTION_THRESHOLD': 0.05,
-        'ROUND_DELTA': 0.15
+        'ROUND_DELTA': 0.1,
+        'TREND_THRESHOLD': 0.15,
     }
     m = MeirStrategy(CsvBarFeed(r'C:\Users\dkinsbur\Desktop\iphi_csv.txt'), None, config)
     m.go()

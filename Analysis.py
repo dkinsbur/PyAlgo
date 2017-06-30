@@ -41,6 +41,9 @@ class Trend(object):
         self.local_max_time = start_time
         self.local_min_time = start_time
 
+    def get_pivots(self):
+        return self.pivots
+
     def add(self, (price, time)):
         if not self.started:
             self.init(price, time)
@@ -86,6 +89,9 @@ class Trend(object):
 
     def get_trend(self):
         return self.trend
+
+    def get_trend_flip(self):
+        return self.trend_flip
 
     def _pivot_found(self, pivot):
         for cb in self.pivot_found:

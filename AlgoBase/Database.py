@@ -32,29 +32,6 @@ INSERT_MIN_BAR = "INSERT INTO {source}_MIN_BARS VALUES (?,?,?,?,?,?,?,?);"
 SELECT_DAY_BAR = "SELECT * FROM {source}_DAY_BARS {condition};"
 SELECT_MIN_BAR = "SELECT * FROM {source}_MIN_BARS {condition};"
 
-
-
-# class BarDatabase(object):
-#     def __init__(self, database, source, data_type):
-#         data_type = data_type.upper()
-#         source = source.upper()
-#         self.table_name = '{data_type}_BARS_{source}'.format(data_type=data_type, source=source)
-#         assert type(self) is not BarDatabase
-#
-#
-# class MinuteBarDatabase(BarDatabase):
-#     def __init__(self, database, source):
-#         super(MinuteBarDatabase, self).__init__(database, source, 'MIN')
-#
-#     def get_bars(self, symbol, start, end=None, pre_post_bars=True):
-#         assert type(symbol) is str and type(start) is datetime
-#
-#
-#     def set_bars(self, symbol, bars, overrite=False):
-#         pass
-
-
-
 class Database(object):
 
     def __init__(self, db_file, source):
